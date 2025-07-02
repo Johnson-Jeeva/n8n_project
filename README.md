@@ -1,4 +1,4 @@
-# Lead Recovery & Notification System
+# Lead Follow-up & Notification System
 
 This project is a simple automation system to handle incoming leads. It uses:
 - Webhooks to receive lead data
