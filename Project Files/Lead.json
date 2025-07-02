@@ -1,0 +1,255 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "new-lead",
+        "options": {}
+      },
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "84812d87-64ab-4a3a-8f45-bb1bfe49772a",
+      "webhookId": "d4ba4e82-a78e-491c-b8a9-d05b41acecb4"
+    },
+    {
+      "parameters": {
+        "calendar": "primary",
+        "start": "={{ new Date().toISOString() }}",
+        "end": "={{ new Date(new Date().getTime() + 30 * 60000).toISOString() }}",
+        "additionalFields": {
+          "description": "={{ $json.body }}",
+          "summary": "={{`Meeting with New Lead`}}"
+        }
+      },
+      "name": "Create Google Calendar Event",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1,
+      "position": [
+        760,
+        -180
+      ],
+      "id": "a0bdbd26-9278-42de-88a5-12414affd111",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "VzR1Xn4cOHYW3MoZ",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "from": "+14155238886",
+        "to": "+15202039175",
+        "toWhatsapp": true,
+        "message": "=New Lead: {{$json[\"name\"]}} from {{$json[\"company\"]}}. Phone: {{$json[\"phone\"]}}",
+        "options": {}
+      },
+      "name": "Send alert in Whatsapp via Twilio",
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [
+        540,
+        -180
+      ],
+      "id": "0d4ddfa6-7d01-4af1-bfcb-e64ff42c80b1",
+      "credentials": {
+        "twilioApi": {
+          "id": "HWWlrcmHkzKV6mhi",
+          "name": "Twilio account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "airtableTokenApi",
+        "operation": "append",
+        "application": {
+          "__rl": true,
+          "value": "appHsoxkFwyNK3OOR",
+          "mode": "id"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblhcVEw623howpPc",
+          "mode": "id"
+        },
+        "addAllFields": false,
+        "fields": [
+          "name",
+          "phone",
+          "company"
+        ],
+        "options": {}
+      },
+      "name": "Record added in Airtable",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 1,
+      "position": [
+        580,
+        100
+      ],
+      "id": "93bac6e7-7e9b-4e00-b6cd-40a7c5e2b4a3",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "rvlmSU5GBRKL9iQY",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "airtableTokenApi",
+        "operation": "update",
+        "application": {
+          "__rl": true,
+          "value": "appHsoxkFwyNK3OOR",
+          "mode": "id"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblhcVEw623howpPc",
+          "mode": "id"
+        },
+        "id": "={{ $json.id }}",
+        "updateAllFields": false,
+        "fields": [
+          "status"
+        ],
+        "options": {}
+      },
+      "name": "Update Status in Airtable",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 1,
+      "position": [
+        1200,
+        -20
+      ],
+      "id": "f96ed669-ce32-4ee4-a1cb-d1e505067f8b",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "rvlmSU5GBRKL9iQY",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "return [{\n  json: {\n    name: $json.body.name,\n    phone: $json.body.phone,\n    company: $json.body.company,\n    email: $json.body.email,\n    message: `New Lead: ${$json.body.name} from ${$json.body.company}. Phone: ${$json.body.phone}`\n  }\n}];"
+      },
+      "name": "Message Drafting",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        200,
+        0
+      ],
+      "id": "2eb5e8f9-8844-437f-9e49-8f4e312629c5"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        960,
+        -20
+      ],
+      "id": "ab69acf5-f5d4-4257-845d-9842e853ac53",
+      "name": "Merging 2 nodes"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Message Drafting",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Google Calendar Event": {
+      "main": [
+        [
+          {
+            "node": "Merging 2 nodes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send alert in Whatsapp via Twilio": {
+      "main": [
+        [
+          {
+            "node": "Create Google Calendar Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record added in Airtable": {
+      "main": [
+        [
+          {
+            "node": "Merging 2 nodes",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Message Drafting": {
+      "main": [
+        [
+          {
+            "node": "Send alert in Whatsapp via Twilio",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Record added in Airtable",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merging 2 nodes": {
+      "main": [
+        [
+          {
+            "node": "Update Status in Airtable",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "7128d4b0-09dc-4a9f-98af-0690532a3ccd",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "4d1dbf8a70092cf9c86f30aac4478a49ab5727cf5e00272c23bd6dda761b3f2f"
+  },
+  "id": "ooeNJzquT5qOvxNG",
+  "tags": []
+}
